@@ -1,0 +1,50 @@
+{
+  "llm": {
+    "active_provider": "custom",
+    "providers": {
+      "openai": {
+        "name": "OpenAI",
+        "api_url": "https://api.openai.com/v1/chat/completions",
+        "api_key": "",
+        "model": "gpt-4o",
+        "max_tokens": 4096
+      },
+      "claude": {
+        "name": "Claude",
+        "api_url": "https://api.anthropic.com/v1/messages",
+        "api_key": "",
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 4096
+      },
+      "deepseek": {
+        "name": "DeepSeek",
+        "api_url": "https://api.deepseek.com/v1/chat/completions",
+        "api_key": "",
+        "model": "deepseek-chat",
+        "max_tokens": 4096
+      },
+      "custom": {
+        "name": "自定义",
+        "api_url": "https://api.poixe.com/v1/chat/completions",
+        "api_key": "sk-6zWGb6qEYIJ5QmDGmyNjsT6dc1Cb1eSalIAXjFArVy8dCqbW",
+        "model": "gpt-4o",
+        "max_tokens": 8192
+      }
+    }
+  },
+  "mongodb": {
+    "uri": "mongodb://localhost:27017",
+    "db_name": "news_aggregator"
+  },
+  "scraper": {
+    "interval_hours": 24,
+    "delay_between_requests": 1.5
+  },
+  "prompts": {
+    "filter": "【角色设定】\n你是一名就职于中国“皇岗边检站”的资深出入境政策分析师和情报专员。你具备敏锐的政治触觉和极强的信息提炼能力。\n\n【任务目标】\n从以下新闻标题中，严格筛选与“国际移民政策、出入境管理、签证政策变化、边境口岸通关便利化、难民/庇护政策、粤港澳大湾区交通/通关融合”高度相关的资讯。\n\n【筛选标准】\n强相关性：仅提取与国际移民政策、出入境管理、签证政策变化、边境口岸通关便利化、难民/庇护政策、粤港澳大湾区交通/通关融合高度相关的资讯。\n剔除无关项：坚决过滤掉娱乐、体育、纯经济股市、无关的社会新闻等噪音数据。\n\n请以JSON数组格式返回你筛选出的文章标题（原文不变），例如：\n[\"标题1\", \"标题2\", \"标题3\"]\n\n只返回JSON数组，不要添加任何其他文字。",
+    "report": "【角色设定】\n你是一名就职于中国\"皇岗边检站\"的资深出入境政策分析师和情报专员。你具备敏锐的政治触觉和极强的信息提炼能力，文风严谨、客观、精练，符合中国官方政务信息简报的标准规范。\n\n【任务目标】\n根据以下通过爬虫从Fragomen、VisaHQ、大公网、香港新闻网获取的新闻，进行深度筛选、分类、翻译（如需）和总结，生成一份标准的《皇岗边检站国际移民资讯》。\n\n【信息处理要求】\n合并同类项：如果多个来源报道了同一事件，请将其合并为一条，综合提炼核心信息，避免重复。\n语言：全部输出为简体中文。若原文为英文，请翻译为符合中文政务表达习惯的专业术语（如：Express Entry译为快捷通道；eVisa译为电子签证）。\n文风：必须客观中立，不带个人主观评论。精简用词，直击要害。\n\n【输出JSON格式】\n请严格按照以下JSON格式返回：\n{\n  \"title\": \"皇岗边检站国际移民资讯\",\n  \"dateStart\": \"X月X日\",\n  \"dateEnd\": \"X月X日\",\n  \"summaries\": [\"将正文所有新闻标题按顺序提取，每条以分号结尾；\"],\n  \"sections\": [\n    {\n      \"title\": \"涉我重要移民动态\",\n      \"newsItems\": [\n        {\"headline\": \"提炼的精简标题。\", \"body\": \"据[来源网站名称][月/日]报道，[用100-200字详细概括，必须包含：政策具体内容、实施或生效时间、适用对象或国家、关键数据或数字、预期影响。严禁一句话带过，要求信息密度高、细节详实]。（皇岗边检站）\"}\n      ]\n    },\n    {\n      \"title\": \"周边国家移民要闻\",\n      \"newsItems\": [\n        {\"headline\": \"提炼的精简标题。\", \"body\": \"综合外媒/据[来源网站名称][月/日]报道，[用100-200字详细概括，必须包含：政策具体内容、实施或生效时间、适用对象或国家、关键数据或数字、预期影响。严禁一句话带过，要求信息密度高、细节详实]。（皇岗边检站）\"}\n      ]\n    }\n  ]\n}\n\n【分类说明】\n一、涉我重要移民动态：中国内地、香港、澳门、台湾地区的相关出入境、边检、大湾区融合、通关便利化等新闻\n二、周边国家移民要闻：美国、英国、加拿大、日本、新西兰及其他所有外国国家关于签证、移民、边管等重大政策变动\n\n【格式规定】\n- 每条headline以句号结尾\n- 每条body末尾必须包含（皇岗边检站）\n- summaries中每条以分号结尾\n- 每条body必须100字以上，包含政策细节、时间节点、适用人群、关键数据等具体信息，不得笼统概括\n\n【关键约束 - 必须严格遵守】\n1. summaries的条数必须等于所有sections中newsItems的总条数，不能多也不能少。\n2. summaries中的每一条摘要，必须在sections的newsItems中有对应的展开描述（headline+body），二者一一对应、顺序一致。\n3. 禁止出现摘要中有但详情中没有，或详情中有但摘要中没有的情况。\n4. 输出前请自检：逐条核对summaries和newsItems的数量与对应关系是否完全一致。\n\n只返回JSON，不要添加其他文字。"
+  },
+  "report_generation": {
+    "batch_size": 15
+  }
+}

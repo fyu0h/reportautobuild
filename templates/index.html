@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国际移民新闻聚合系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#020617;--bg2:#0F172A;--bg3:#1E293B;
+  --card:#0F172A;--card-hover:#162032;
+  --border:#1E293B;--border-light:#334155;
+  --primary:#22C55E;--primary-light:#4ADE80;--primary-dark:#16A34A;
+  --accent:#3B82F6;--accent2:#F59E0B;--danger:#EF4444;
+  --text:#F8FAFC;--text2:#94A3B8;--text3:#64748B;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --glow:0 0 20px rgba(34,197,94,.08);
+  --transition:all .2s ease;
+}
+body{font-family:'Lato','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+h1,h2,h3,h4{font-family:'EB Garamond','Noto Serif SC',serif;font-weight:600;letter-spacing:.02em}
+
+/* ===== SIDEBAR NAV ===== */
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.sidebar-logo .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:10px;display:flex;align-items:center;justify-content:center}
+.sidebar-logo .logo-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2}
+.sidebar-logo .logo-text{font-family:'EB Garamond',serif;font-size:16px;font-weight:700;color:var(--text)}
+.sidebar-logo .logo-sub{font-size:11px;color:var(--text3);font-family:'Lato',sans-serif;font-weight:300}
+
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);border:none;background:none;color:var(--text3);font-size:14px;font-family:'Lato',sans-serif;font-weight:400;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:rgba(34,197,94,.1);color:var(--primary-light);font-weight:700}
+.nav-item.active svg{stroke:var(--primary-light)}
+.nav-item svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.nav-divider{height:1px;background:var(--border);margin:8px 4px}
+.nav-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;padding:8px 14px 4px;font-weight:700}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.sidebar-footer .status-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--primary)}
+
+.main-content{margin-left:240px;flex:1;min-height:100vh}
+
+/* ===== HEADER ===== */
+.page-header{padding:24px 32px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.page-header h2{font-size:22px;font-weight:600}
+.page-header .header-actions{display:flex;gap:8px;align-items:center}
+
+/* ===== CONTENT ===== */
+.content-area{padding:24px 32px}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== CARDS ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;transition:var(--transition)}
+.card:hover{border-color:var(--border-light);box-shadow:var(--glow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-header h3{font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.card-header .badge{font-size:11px;background:rgba(34,197,94,.12);color:var(--primary-light);padding:3px 10px;border-radius:20px;font-family:'Lato',sans-serif;font-weight:700;letter-spacing:.3px}
+
+/* ===== STATS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:var(--transition);position:relative;overflow:hidden}
+.stat-card:hover{border-color:var(--border-light);box-shadow:var(--glow)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--primary),var(--accent));opacity:0;transition:opacity .3s}
+.stat-card:hover::after{opacity:1}
+.stat-card .label{font-size:12px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.stat-card .value{font-size:32px;font-weight:700;margin-top:6px;font-family:'EB Garamond',serif;background:linear-gradient(135deg,var(--text),var(--primary-light));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .sub{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:'Lato',sans-serif;letter-spacing:.3px}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--primary);color:#020617}
+.btn-primary:hover{background:var(--primary-dark);box-shadow:0 4px 16px rgba(34,197,94,.3)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:#2563EB}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary-light)}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-lg{padding:12px 28px;font-size:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ===== INPUTS ===== */
+input,textarea,select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:'Lato',sans-serif;transition:var(--transition)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(34,197,94,.1)}
+textarea{min-height:80px;resize:vertical;line-height:1.6}
+label{display:block;font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;margin-top:14px;text-transform:uppercase;letter-spacing:.8px}
+label:first-child{margin-top:0}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:12px 14px;color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid rgba(30,41,59,.6);vertical-align:top}
+tr{transition:background .15s}
+tr:hover td{background:rgba(34,197,94,.03)}
+td a{color:var(--primary-light);text-decoration:none;transition:color .15s}
+td a:hover{color:var(--primary);text-decoration:underline}
+
+/* ===== CHECKBOX ===== */
+.checkbox{display:flex;align-items:center;gap:10px;cursor:pointer}
+.checkbox input[type="checkbox"]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;z-index:1000;animation:slideUp .3s ease;backdrop-filter:blur(12px)}
+.toast.success{background:rgba(34,197,94,.9)}
+.toast.error{background:rgba(239,68,68,.9)}
+.toast.info{background:rgba(59,130,246,.9)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== LOADING ===== */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:absolute;inset:0;background:rgba(2,6,23,.85);display:flex;align-items:center;justify-content:center;border-radius:var(--radius);z-index:10}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{width:auto;min-width:150px}
+
+/* ===== REPORT PREVIEW ===== */
+.report-preview{background:#fff;color:#000;padding:2cm 2.5cm;border-radius:6px;font-family:"FangSong","仿宋",serif;font-size:14pt;line-height:24pt;max-height:600px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.report-preview h2{font-family:"SimSun",serif;font-size:18pt;text-align:center;margin-bottom:8px}
+.report-preview .subtitle{text-align:center;font-family:"KaiTi",serif;margin-bottom:12px}
+.report-preview .section-title{font-family:"SimHei",sans-serif;font-weight:bold;margin-top:16px}
+.report-preview .news-headline{font-weight:bold}
+
+/* ===== SETTINGS ===== */
+.provider-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;transition:var(--transition)}
+.provider-card.active{border-color:var(--primary);background:rgba(34,197,94,.03)}
+.provider-card .provider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.provider-card .provider-name{font-weight:700;font-size:14px;font-family:'EB Garamond',serif}
+
+/* ===== PIPELINE STEPS ===== */
+.step-indicator{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:12px 16px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text3);transition:var(--transition);flex-shrink:0}
+.step-num.active{background:var(--primary);color:#020617}
+.step-num.done{background:var(--primary-dark);color:#fff}
+.step-line{flex:1;height:1px;background:var(--border)}
+.step-label{font-size:12px;color:var(--text3);font-weight:600;white-space:nowrap}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.two-col{grid-template-columns:1fr}}
+@media(max-width:768px){.sidebar{display:none}.main-content{margin-left:0}}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+
+/* ===== GLOW ACCENT ===== */
+.glow-line{height:1px;background:linear-gradient(90deg,transparent,var(--primary),transparent);margin:24px 0;opacity:.3}
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">新闻聚合系统</div>
+      <div class="logo-sub">Immigration Intelligence</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">主菜单</div>
+    <button class="nav-item active" onclick="switchView('dashboard')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      仪表盘
+    </button>
+    <button class="nav-item" onclick="switchView('articles')">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      文章列表
+    </button>
+    <div class="nav-divider"></div>
+    <div class="nav-label">工作流</div>
+    <button class="nav-item" onclick="switchView('pipeline')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      智能处理
+    </button>
+    <div class="nav-divider"></div>
+    <div class="nav-label">系统</div>
+    <button class="nav-item" onclick="switchView('settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      设置
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span> MongoDB 已连接
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+<!-- ============ 仪表盘 ============ -->
+<div id="view-dashboard" class="view active">
+  <div class="page-header">
+    <h2>仪表盘</h2>
+    <div class="header-actions">
+      <button class="btn btn-primary btn-lg" onclick="triggerScrape()" id="btnScrape">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        立即爬取全部
+      </button>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="stats-grid" id="statsRow">
+      <div class="stat-card"><div class="label">文章总数</div><div class="value" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="label">爬虫状态</div><div class="value" id="statStatus">—</div><div class="sub" id="statLastRun"></div></div>
+      <div class="stat-card"><div class="label">数据源</div><div class="value">4</div><div class="sub">Fragomen · VisaHQ · 大公文匯 · 香港新聞</div></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><h3>数据源统计</h3></div>
+        <div class="table-wrap"><table id="sourceTable"><thead><tr><th>来源</th><th>文章数</th><th>最后更新</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>最近爬取记录</h3></div>
+        <div class="table-wrap"><table id="logTable"><thead><tr><th>来源</th><th>新增</th><th>状态</th><th>时间</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 文章列表 ============ -->
+<div id="view-articles" class="view">
+  <div class="page-header">
+    <h2>文章列表</h2>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="sendToFilter()">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        发送到 LLM 筛选
+      </button>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="filter-bar">
+      <select id="filterSource" onchange="loadArticles()">
+        <option value="">全部来源</option>
+        <option value="Fragomen">Fragomen</option>
+        <option value="VisaHQ">VisaHQ</option>
+        <option value="大公文匯網">大公文匯網</option>
+        <option value="香港新聞網">香港新聞網</option>
+      </select>
+      <input type="number" id="filterHours" value="24" min="1" max="720" style="width:80px" onchange="loadArticles()">
+      <span style="color:var(--text3);font-size:13px">小时</span>
+      <input type="text" id="filterKeyword" placeholder="搜索标题..." style="min-width:200px" onkeyup="if(event.key==='Enter')loadArticles()">
+      <button class="btn btn-outline" onclick="loadArticles()">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        查询
+      </button>
+    </div>
+    <div class="card" style="position:relative">
+      <div class="card-header">
+        <h3>文章 <span class="badge" id="articleCount">0</span></h3>
+      </div>
+      <div class="table-wrap">
+        <table id="articleTable">
+          <thead><tr><th style="width:30px"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th><th>标题</th><th>来源</th><th>日期</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="articleLoading" class="loading-overlay" style="display:none"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 智能处理 ============ -->
+<div id="view-pipeline" class="view">
+  <div class="page-header"><h2>智能处理管线</h2></div>
+  <div class="content-area">
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <span class="step-num active">1</span><span class="step-label">LLM 筛选</span>
+      <span class="step-line"></span>
+      <span class="step-num">2</span><span class="step-label">筛选结果</span>
+      <span class="step-line"></span>
+      <span class="step-num">3</span><span class="step-label">报告生成</span>
+      <span class="step-line"></span>
+      <span class="step-num">4</span><span class="step-label">导出 Word</span>
+    </div>
+    <div class="two-col">
+      <div>
+        <!-- Step 1: Filter -->
+        <div class="card">
+          <div class="card-header"><h3>Step 1: LLM 筛选 <span class="badge">筛选相关新闻</span></h3></div>
+          <label>筛选提示词</label>
+          <textarea id="filterPrompt" rows="4"></textarea>
+          <label>待筛选标题 (<span id="filterTitleCount">0</span> 条)</label>
+          <div id="filterTitlesArea" style="max-height:200px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text2);margin-bottom:14px"></div>
+          <button class="btn btn-primary" onclick="runFilter()" id="btnFilter">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            开始筛选
+          </button>
+        </div>
+
+        <!-- Step 2: Results -->
+        <div class="card">
+          <div class="card-header"><h3>Step 2: 筛选结果 <span class="badge" id="filterResultCount">0 条</span></h3></div>
+          <div id="filterResults" style="max-height:300px;overflow-y:auto;font-size:13px;"></div>
+          <div class="btn-group" style="margin-top:14px">
+            <button class="btn btn-accent" onclick="runReport()" id="btnReport" disabled>
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              生成报告
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Step 3: Report -->
+        <div class="card">
+          <div class="card-header"><h3>Step 3: 报告生成 <span class="badge">LLM 撰写报告</span></h3></div>
+          <label>报告提示词</label>
+          <textarea id="reportPrompt" rows="4"></textarea>
+          <div id="reportPreviewArea" style="margin-top:14px"></div>
+          <div class="btn-group" style="margin-top:14px">
+            <button class="btn btn-primary btn-lg" onclick="downloadWord()" id="btnDownload" disabled>
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              导出 Word
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 设置 ============ -->
+<div id="view-settings" class="view">
+  <div class="page-header"><h2>系统设置</h2></div>
+  <div class="content-area">
+    <div class="two-col">
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>LLM 提供商</h3></div>
+          <label>当前激活</label>
+          <select id="activeProvider" onchange="saveSettings()">
+            <option value="openai">OpenAI</option>
+            <option value="claude">Claude</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="custom">自定义</option>
+          </select>
+          <div id="providerCards" style="margin-top:16px"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><h3>提示词模板</h3></div>
+          <label>筛选提示词</label>
+          <textarea id="settingsFilterPrompt" rows="5"></textarea>
+          <label>报告提示词</label>
+          <textarea id="settingsReportPrompt" rows="5"></textarea>
+          <button class="btn btn-primary" onclick="savePrompts()" style="margin-top:14px">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            保存提示词
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>爬虫设置</h3></div>
+          <label>爬取间隔（小时）</label>
+          <input type="number" id="settingsInterval" min="1" max="168" value="24">
+          <label>请求延迟（秒）</label>
+          <input type="number" id="settingsDelay" min="0.5" max="10" step="0.5" value="1.5">
+          <button class="btn btn-primary" onclick="saveScraperSettings()" style="margin-top:14px">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ===== 全局状态 =====
+let allArticles = [];
+let filterTitles = [];
+let filterSelected = [];
+let selectedArticles = [];
+let currentReport = null;
+
+// ===== 视图切换 =====
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  event.target.closest('.nav-item').classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'articles') loadArticles();
+  if (name === 'settings') loadSettings();
+}
+
+// ===== Toast =====
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ===== API 调用 =====
+async function api(url, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  return await fetch(url, opts);
+}
+
+// ===== 仪表盘 =====
+async function loadDashboard() {
+  try {
+    const res = await api('/api/scrape/status');
+    const data = await res.json();
+    document.getElementById('statTotal').textContent = data.total_articles || 0;
+    document.getElementById('statStatus').textContent = data.is_running ? '运行中...' : '空闲';
+    document.getElementById('statLastRun').textContent = data.last_run ? '上次: ' + new Date(data.last_run).toLocaleString() : '尚未运行';
+
+    const tbody = document.querySelector('#sourceTable tbody');
+    tbody.innerHTML = '';
+    (data.sources_stats || []).forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s._id||'未知'}</td><td>${s.count}</td><td>${s.latest ? new Date(s.latest).toLocaleString() : '—'}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    const logBody = document.querySelector('#logTable tbody');
+    logBody.innerHTML = '';
+    (data.recent_logs || []).slice(0, 8).forEach(l => {
+      const tr = document.createElement('tr');
+      const statusColor = l.status === 'success' ? 'var(--primary)' : 'var(--danger)';
+      tr.innerHTML = `<td>${l.source}</td><td>+${l.new_count}</td><td style="color:${statusColor}">${l.status}</td><td>${l.started_at ? new Date(l.started_at).toLocaleString() : '—'}</td>`;
+      logBody.appendChild(tr);
+    });
+  } catch (e) { console.error(e); }
+}
+
+// ===== 触发爬取 =====
+async function triggerScrape() {
+  const btn = document.getElementById('btnScrape');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 爬取中...';
+  toast('爬虫已启动，请稍候...', 'info');
+  try {
+    await api('/api/scrape', 'POST');
+    const poll = setInterval(async () => {
+      const res = await api('/api/scrape/status');
+      const data = await res.json();
+      if (!data.is_running) {
+        clearInterval(poll);
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 立即爬取全部';
+        toast('爬取完成！', 'success');
+        loadDashboard();
+      }
+    }, 3000);
+  } catch (e) { btn.disabled = false; btn.innerHTML = '立即爬取全部'; toast('爬取失败: ' + e, 'error'); }
+}
+
+// ===== 文章列表 =====
+async function loadArticles() {
+  const loading = document.getElementById('articleLoading');
+  loading.style.display = 'flex';
+  const source = document.getElementById('filterSource').value;
+  const hours = document.getElementById('filterHours').value;
+  const keyword = document.getElementById('filterKeyword').value;
+  let url = `/api/articles?hours=${hours}&limit=5000`;
+  if (source) url += `&source=${encodeURIComponent(source)}`;
+  if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+  try {
+    const res = await api(url);
+    const data = await res.json();
+    allArticles = data.articles || [];
+    document.getElementById('articleCount').textContent = allArticles.length;
+    const tbody = document.querySelector('#articleTable tbody');
+    tbody.innerHTML = '';
+    allArticles.forEach((a, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" class="article-check" data-idx="${i}"></td>
+        <td><a href="${a.url}" target="_blank">${a.title}</a></td>
+        <td>${a.source||'—'}</td>
+        <td>${a.date||'—'}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { toast('加载失败', 'error'); }
+  loading.style.display = 'none';
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.article-check').forEach(c => c.checked = cb.checked);
+}
+
+function getCheckedArticles() {
+  const checks = document.querySelectorAll('.article-check:checked');
+  return Array.from(checks).map(c => allArticles[parseInt(c.dataset.idx)]);
+}
+
+// ===== 发送到 LLM 筛选 =====
+function sendToFilter() {
+  const checked = getCheckedArticles();
+  if (checked.length === 0) {
+    filterTitles = allArticles.map(a => a.title);
+    selectedArticles = [...allArticles];
+  } else {
+    filterTitles = checked.map(a => a.title);
+    selectedArticles = [...checked];
+  }
+  switchViewDirect('pipeline');
+  document.getElementById('filterTitleCount').textContent = filterTitles.length;
+  const area = document.getElementById('filterTitlesArea');
+  area.innerHTML = filterTitles.map((t,i) => `<div style="margin:2px 0">${i+1}. ${t}</div>`).join('');
+}
+
+function switchViewDirect(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(t => {
+    const text = t.textContent.trim();
+    if ((name==='pipeline' && text.includes('智能')) || (name==='dashboard' && text.includes('仪表')) || (name==='articles' && text.includes('文章')) || (name==='settings' && text.includes('设置')))
+      t.classList.add('active');
+  });
+}
+
+// ===== LLM 筛选 =====
+async function runFilter() {
+  if (filterTitles.length === 0) { toast('请先从文章列表发送标题', 'error'); return; }
+  const btn = document.getElementById('btnFilter');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 筛选中...';
+  const prompt = document.getElementById('filterPrompt').value || null;
+  try {
+    const res = await api('/api/llm/filter', 'POST', { titles: filterTitles, prompt });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    filterSelected = data.selected || [];
+    document.getElementById('filterResultCount').textContent = filterSelected.length + ' 条';
+    const area = document.getElementById('filterResults');
+    area.innerHTML = filterSelected.map((t,i) => {
+      const matched = selectedArticles.find(a => a.title === t || a.title.includes(t) || t.includes(a.title));
+      const linkHtml = matched && matched.url ? ` <a href="${matched.url}" target="_blank" style="color:var(--primary-light);text-decoration:none;font-size:12px" title="查看原文">&#x1F517;</a>` : '';
+      return `<div class="checkbox" style="margin:6px 0"><input type="checkbox" checked data-title="${t.replace(/"/g,'&quot;')}"><span>${i+1}. ${t}</span>${linkHtml}</div>`;
+    }).join('');
+    document.getElementById('btnReport').disabled = false;
+    // Update step indicator
+    document.querySelectorAll('.step-num')[0].className = 'step-num done';
+    document.querySelectorAll('.step-num')[1].className = 'step-num active';
+    toast(`筛选完成：${filterSelected.length}/${filterTitles.length} 条相关`, 'success');
+  } catch (e) { toast('筛选失败: ' + e.message, 'error'); }
+  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 开始筛选';
+}
+
+// ===== 生成报告 =====
+async function runReport() {
+  const checks = document.querySelectorAll('#filterResults input[type="checkbox"]:checked');
+  const selectedTitles = Array.from(checks).map(c => c.dataset.title);
+  if (selectedTitles.length === 0) { toast('请勾选至少一条新闻', 'error'); return; }
+  const matched = selectedArticles.filter(a => selectedTitles.some(t => a.title === t || a.title.includes(t) || t.includes(a.title)));
+  if (matched.length === 0) { toast('无法匹配文章', 'error'); return; }
+  const btn = document.getElementById('btnReport');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 生成中（正在爬取正文+LLM处理）...';
+  const prompt = document.getElementById('reportPrompt').value || null;
+  try {
+    const res = await api('/api/llm/report', 'POST', { articles: matched, prompt });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    currentReport = data.report;
+    if (currentReport.raw_response) {
+      document.getElementById('reportPreviewArea').innerHTML = `<div class="card" style="background:var(--bg)"><pre style="white-space:pre-wrap;font-size:12px;color:var(--text2)">${currentReport.raw_response}</pre></div>`;
+    } else {
+      renderReportPreview(currentReport);
+    }
+    document.getElementById('btnDownload').disabled = false;
+    document.querySelectorAll('.step-num')[1].className = 'step-num done';
+    document.querySelectorAll('.step-num')[2].className = 'step-num active';
+    toast('报告生成完成！', 'success');
+  } catch (e) { toast('报告生成失败: ' + e.message, 'error'); }
+  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 生成报告';
+}
+
+function renderReportPreview(r) {
+  let html = '<div class="report-preview">';
+  html += `<h2>${r.title||'皇岗边检站国际移民一周资讯'}</h2>`;
+  html += `<div class="subtitle">（${r.dateStart||'X月X日'}至${r.dateEnd||'X月X日'}）</div>`;
+  if (r.summaries && r.summaries.length) {
+    html += '<p style="text-indent:2em"><b>【信息摘要】</b></p>';
+    r.summaries.forEach((s,i) => { html += `<p style="text-indent:2em">${i+1}.${s}</p>`; });
+  }
+  const CN = ['一','二','三','四','五'];
+  let ni = 0;
+  (r.sections||[]).forEach((sec,si) => {
+    html += `<p class="section-title" style="text-indent:2em">${CN[si]||si+1}、${sec.title}</p>`;
+    (sec.newsItems||[]).forEach(n => {
+      ni++;
+      html += `<p style="text-indent:2em"><span class="news-headline">${ni}.${n.headline}</span>${n.body||''}</p>`;
+    });
+  });
+  html += '</div>';
+  document.getElementById('reportPreviewArea').innerHTML = html;
+}
+
+// ===== 导出 Word =====
+async function downloadWord() {
+  if (!currentReport) { toast('请先生成报告', 'error'); return; }
+  const btn = document.getElementById('btnDownload');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 生成中...';
+  try {
+    const reportData = { ...currentReport, title: currentReport.title || '皇岗边检站国际移民一周资讯' };
+    const res = await fetch('/api/report/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reportData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `国际移民一周资讯_${reportData.dateStart||''}至${reportData.dateEnd||''}.docx`;
+    a.click();
+    document.querySelectorAll('.step-num')[2].className = 'step-num done';
+    document.querySelectorAll('.step-num')[3].className = 'step-num active';
+    toast('Word 文件已下载！', 'success');
+  } catch (e) { toast('导出失败: ' + e.message, 'error'); }
+  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 导出 Word';
+}
+
+// ===== 设置 =====
+async function loadSettings() {
+  try {
+    const res = await api('/api/config');
+    const config = await res.json();
+    document.getElementById('activeProvider').value = config.llm?.active_provider || 'openai';
+    const container = document.getElementById('providerCards');
+    container.innerHTML = '';
+    const providers = config.llm?.providers || {};
+    for (const [key, p] of Object.entries(providers)) {
+      const isActive = key === config.llm?.active_provider;
+      container.innerHTML += `
+        <div class="provider-card ${isActive?'active':''}" id="pc-${key}">
+          <div class="provider-header">
+            <span class="provider-name">${p.name||key}</span>
+            <button class="btn btn-sm btn-outline" onclick="testLLM('${key}')" style="cursor:pointer">测试连接</button>
+          </div>
+          <label>API URL</label><input type="text" id="p-${key}-url" value="${p.api_url||''}">
+          <label>API Key</label><input type="password" id="p-${key}-key" placeholder="${p.api_key_masked||'未设置'}" value="">
+          <label>模型</label><input type="text" id="p-${key}-model" value="${p.model||''}">
+          <button class="btn btn-sm btn-primary" onclick="saveProvider('${key}')" style="margin-top:10px;cursor:pointer">保存</button>
+        </div>`;
+    }
+    document.getElementById('settingsFilterPrompt').value = config.prompts?.filter || '';
+    document.getElementById('settingsReportPrompt').value = config.prompts?.report || '';
+    document.getElementById('filterPrompt').value = config.prompts?.filter || '';
+    document.getElementById('reportPrompt').value = config.prompts?.report || '';
+    document.getElementById('settingsInterval').value = config.scraper?.interval_hours || 24;
+    document.getElementById('settingsDelay').value = config.scraper?.delay_between_requests || 1.5;
+  } catch (e) { console.error(e); }
+}
+
+async function saveSettings() {
+  const active = document.getElementById('activeProvider').value;
+  try {
+    await api('/api/config', 'PUT', { llm: { active_provider: active } });
+    toast('已切换到 ' + active, 'success');
+    loadSettings();
+  } catch (e) { toast('保存失败', 'error'); }
+}
+
+async function saveProvider(key) {
+  const url = document.getElementById(`p-${key}-url`).value;
+  const apiKey = document.getElementById(`p-${key}-key`).value;
+  const model = document.getElementById(`p-${key}-model`).value;
+  const providers = {};
+  providers[key] = {};
+  if (url) providers[key].api_url = url;
+  if (apiKey) providers[key].api_key = apiKey;
+  if (model) providers[key].model = model;
+  try {
+    await api('/api/config', 'PUT', { llm: { providers } });
+    toast(`${key} 配置已保存`, 'success');
+  } catch (e) { toast('保存失败', 'error'); }
+}
+
+async function testLLM(key) {
+  toast('正在测试连接...', 'info');
+  try {
+    const res = await api('/api/llm/test', 'POST', { provider: key });
+    const data = await res.json();
+    if (data.status === 'success') toast(`${key} 连接成功: ${data.response}`, 'success');
+    else toast(`${key} 连接失败: ${data.error}`, 'error');
+  } catch (e) { toast('测试失败: ' + e, 'error'); }
+}
+
+async function savePrompts() {
+  const filter = document.getElementById('settingsFilterPrompt').value;
+  const report = document.getElementById('settingsReportPrompt').value;
+  try {
+    await api('/api/config', 'PUT', { prompts: { filter, report } });
+    document.getElementById('filterPrompt').value = filter;
+    document.getElementById('reportPrompt').value = report;
+    toast('提示词已保存', 'success');
+  } catch (e) { toast('保存失败', 'error'); }
+}
+
+async function saveScraperSettings() {
+  const interval_hours = parseInt(document.getElementById('settingsInterval').value);
+  const delay_between_requests = parseFloat(document.getElementById('settingsDelay').value);
+  try {
+    await api('/api/config', 'PUT', { scraper: { interval_hours, delay_between_requests } });
+    toast('爬虫设置已保存（重启后生效）', 'success');
+  } catch (e) { toast('保存失败', 'error'); }
+}
+
+// ===== 初始化 =====
+loadDashboard();
+loadSettings();
+</script>
+</body>
+</html>
