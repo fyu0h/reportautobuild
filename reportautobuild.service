@@ -1,0 +1,15 @@
+[Unit]
+Description=国际移民管理咨询工作流
+After=network.target mongod.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/autogongwen/reportautobuild
+ExecStart=/root/autogongwen/reportautobuild/venv/bin/gunicorn app:app --bind 0.0.0.0:5100 --workers 4 --timeout 300 --access-logfile access.log --error-logfile error.log
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

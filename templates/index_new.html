@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>国际移民资讯工作流</title>
+<title>国际移民管理咨询工作流</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -228,12 +228,12 @@ td a:hover{text-decoration:underline}
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar">
   <div class="sb-logo">
-    <div class="sb-logo-icon">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <div class="sb-logo-icon" style="background:none">
+      <img src="/static/logo.png" style="width:36px;height:36px;border-radius:50%">
     </div>
     <div>
-      <div class="sb-logo-text">资讯工作流</div>
-      <div class="sb-logo-sub">Immigration Intelligence</div>
+      <div class="sb-logo-text">移民管理咨询</div>
+      <div class="sb-logo-sub">China Immigration</div>
     </div>
   </div>
   <nav class="sb-nav">
@@ -510,26 +510,46 @@ td a:hover{text-decoration:underline}
 
 <!-- ===== 历史记录页面 ===== -->
 <div id="v-history" class="view">
-  <div class="view-header"><h1>历史记录</h1><p>查看往次报告生成记录</p></div>
-  <div id="historyList"></div>
-  <div id="historyDetail" style="display:none">
-    <button class="btn btn-sm btn-outline" onclick="showHistoryList()" style="margin-bottom:12px">← 返回列表</button>
-    <div class="two-col" style="gap:16px">
-      <div>
-        <div class="card">
-          <div class="card-header"><h3>Step 2: 筛选结果</h3></div>
-          <div id="historyArticles" style="max-height:500px;overflow-y:auto;padding:12px"></div>
-        </div>
+  <div class="topbar">
+    <div class="topbar-left"><h1>历史记录</h1></div>
+    <div class="topbar-right">
+      <button class="btn btn-outline" onclick="loadHistory()">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        刷新
+      </button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="historyList"></div>
+    <div id="historyDetail" style="display:none">
+      <div style="margin-bottom:12px">
+        <button class="btn btn-sm btn-outline" onclick="showHistoryList()">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px"><polyline points="15 18 9 12 15 6"/></svg>
+          返回列表
+        </button>
+        <span id="historyDetailTitle" style="font-weight:600;margin-left:12px;font-size:14px"></span>
       </div>
-      <div>
-        <div class="card">
-          <div class="card-header"><h3>Step 3: 生成报告</h3>
-            <button class="btn btn-sm btn-primary" id="btnHistoryDownload" onclick="downloadHistoryReport()">
-              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              导出 Word
-            </button>
+      <div class="two-col" style="gap:16px">
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h3><svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> 筛选结果</h3>
+              <span class="tag" id="historyArticleCount">0</span>
+            </div>
+            <div id="historyArticles" style="max-height:calc(100vh - 280px);overflow-y:auto"></div>
           </div>
-          <div id="historyReport" style="max-height:500px;overflow-y:auto;padding:12px"></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 生成报告</h3>
+              <button class="btn btn-sm btn-primary" id="btnHistoryDownload" onclick="downloadHistoryReport()">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出 Word
+              </button>
+            </div>
+            <div id="historyReport" style="max-height:calc(100vh - 280px);overflow-y:auto"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -800,7 +820,9 @@ async function runFilter(){
     a.innerHTML=filterSelected.map((t,i)=>{
       const m=selectedArticles.find(a=>a.title===t||a.title.includes(t)||t.includes(a.title));
       const lk=m&&m.url?` <a href="${m.url}" target="_blank" style="color:var(--primary);font-size:11px" title="原文">↗</a>`:'';
-      return `<div class="check" style="margin:6px 0;padding:4px 6px;border-radius:4px;cursor:pointer" data-fidx="${i}"><input type="checkbox" checked data-title="${t.replace(/"/g,'&quot;')}"><span>${i+1}. ${t}</span>${lk}</div>`;
+      const displayTitle=m&&m.title_cn?m.title_cn:t;
+      const tooltip=m&&m.title_cn?` title="${t.replace(/"/g,'&quot;')}"`:''
+      return `<div class="check" style="margin:6px 0;padding:4px 6px;border-radius:4px;cursor:pointer" data-fidx="${i}"><input type="checkbox" checked data-title="${t.replace(/"/g,'&quot;')}"><span${tooltip}>${i+1}. ${displayTitle}</span>${lk}</div>`;
     }).join('');
     // 点击行/Shift 范围选取
     let lastFilterIdx=null;
@@ -991,8 +1013,10 @@ async function viewHistory(id){
     _historyCurrentReport=d.report;
     document.getElementById('historyList').style.display='none';
     document.getElementById('historyDetail').style.display='';
+    document.getElementById('historyDetailTitle').textContent=(d.report?.title||'报告')+' ('+d.created_at+')';
     // 渲染筛选结果（文章列表带链接）
     const articles=d.articles||[];
+    document.getElementById('historyArticleCount').textContent=articles.length;
     let ah='<div style="font-size:13px">';
     articles.forEach((a,i)=>{
       const displayTitle=a.title_cn||a.title;
