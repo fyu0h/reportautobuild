@@ -53,6 +53,10 @@ def init_db():
     logs = db["scrape_logs"]
     logs.create_index("started_at")
 
+    # report_history 集合索引
+    history = db["report_history"]
+    history.create_index([("created_at", DESCENDING)])
+
     print("[DB] 数据库索引初始化完成")
     return db
 
@@ -197,3 +201,58 @@ def search_articles(keyword: str, limit: int = 100) -> list:
         {"_id": 0}
     ).sort("scraped_at", DESCENDING).limit(limit)
     return list(cursor)
+
+
+def save_report_history(filter_results: list, report: dict, articles: list) -> str:
+    """
+    保存报告生成记录。
+    filter_results: 筛选结果标题列表
+    report: LLM 生成的报告 JSON
+    articles: 使用的文章列表（含 url, title, source, date）
+    返回插入的文档 ID。
+    """
+    db = get_db()
+    # 只保存文章的关键字段，不存正文以节省空间
+    articles_slim = [{
+        "title": a.get("title", ""),
+        "title_cn": a.get("title_cn", ""),
+        "url": a.get("url", ""),
+        "source": a.get("source", ""),
+        "date": a.get("date", ""),
+    } for a in articles]
+
+    doc = {
+        "created_at": datetime.now(),
+        "filter_results": filter_results,
+        "report": report,
+        "articles": articles_slim,
+        "summary_count": len(report.get("summaries", [])),
+        "title": report.get("title", "报告"),
+        "date_range": f"{report.get('dateStart', '')}-{report.get('dateEnd', '')}",
+    }
+    result = db["report_history"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+def get_report_history_list(limit: int = 50) -> list:
+    """获取报告历史列表（摘要，不含完整报告内容）"""
+    db = get_db()
+    cursor = db["report_history"].find(
+        {},
+        {"report": 0, "articles": 0}  # 不返回大字段
+    ).sort("created_at", DESCENDING).limit(limit)
+    results = []
+    for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+    return results
+
+
+def get_report_history_detail(history_id: str) -> dict:
+    """获取单条报告历史详情"""
+    from bson import ObjectId
+    db = get_db()
+    doc = db["report_history"].find_one({"_id": ObjectId(history_id)})
+    if doc:
+        doc["_id"] = str(doc["_id"])
+    return doc

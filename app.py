@@ -19,7 +19,8 @@ from models import (
     get_articles_by_time_range, get_article_by_url, update_article_content,
     update_article_title_cn,
     get_article_count, get_sources_stats, log_scrape_run, get_latest_scrape_logs,
-    search_articles
+    search_articles,
+    save_report_history, get_report_history_list, get_report_history_detail
 )
 from scrapers import run_all_scrapers, scrape_article_content, ALL_SCRAPERS
 from llm_client import (
@@ -254,6 +255,12 @@ def api_llm_report():
 
     try:
         report = generate_report(articles, prompt)
+        # 自动保存到历史记录
+        try:
+            filter_titles = [a.get("title_cn") or a.get("title", "") for a in articles]
+            save_report_history(filter_titles, report, articles)
+        except Exception as he:
+            print(f"[历史记录] 保存失败: {he}")
         return jsonify({"report": report})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -384,6 +391,31 @@ def api_logs():
 
     return jsonify({"logs": logs})
 
+
+@app.route("/api/history")
+def api_history_list():
+    """获取报告历史列表"""
+    limit = request.args.get("limit", 50, type=int)
+    history = get_report_history_list(limit)
+    # 转换 datetime 为字符串
+    for h in history:
+        if "created_at" in h:
+            h["created_at"] = h["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+    return jsonify({"history": history})
+
+
+@app.route("/api/history/<history_id>")
+def api_history_detail(history_id):
+    """获取报告历史详情"""
+    try:
+        detail = get_report_history_detail(history_id)
+        if not detail:
+            return jsonify({"error": "记录不存在"}), 404
+        if "created_at" in detail:
+            detail["created_at"] = detail["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+        return jsonify(detail)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     print("=" * 60)
