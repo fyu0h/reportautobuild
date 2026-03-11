@@ -1033,20 +1033,11 @@ async function viewHistory(id){
   }catch(e){toast('加载失败:'+e.message,'error')}
 }
 function renderHistoryReport(r){
-  let h='<div style="font-size:13px">';
-  h+=`<h3 style="margin:0 0 4px">${r.title||''}</h3>`;
-  h+=`<div style="color:var(--text3);font-size:12px;margin-bottom:12px">（${r.dateStart||''}至${r.dateEnd||''}）</div>`;
-  if(r.summaries?.length){
-    h+='<div style="font-weight:600;margin-bottom:6px">【信息摘要】</div>';
-    r.summaries.forEach((s,i)=>{h+=`<div style="margin-bottom:3px">${i+1}.${s}</div>`});
-    h+='<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">';
-  }
-  (r.sections||[]).forEach((sec,si)=>{
-    h+=`<div style="font-weight:600;margin:10px 0 6px">${['一','二','三','四'][si]||si+1}、${sec.title}</div>`;
-    (sec.newsItems||[]).forEach((item,i)=>{
-      h+=`<div style="margin-bottom:8px"><strong>${i+1}.${item.headline}</strong><div style="color:var(--text2);margin-top:2px">${item.body}</div></div>`;
-    });
-  });
+  let h='<div class="report-preview">';
+  h+=`<h2>${r.title||'皇岗边检站国际移民一周资讯'}</h2><div class="subtitle">（${r.dateStart||'X月X日'}至${r.dateEnd||'X月X日'}）</div>`;
+  if(r.summaries?.length){h+='<p style="text-indent:2em"><b>【信息摘要】</b></p>';r.summaries.forEach((s,i)=>{h+=`<p style="text-indent:2em">${i+1}.${s}</p>`})}
+  const CN=['一','二','三','四','五'];let ni=0;
+  (r.sections||[]).forEach((sec,si)=>{h+=`<p class="section-title" style="text-indent:2em">${CN[si]||si+1}、${sec.title}</p>`;(sec.newsItems||[]).forEach(n=>{ni++;h+=`<p style="text-indent:2em"><span class="news-headline">${ni}.${n.headline}</span>${n.body||''}</p>`})});
   h+='</div>';
   document.getElementById('historyReport').innerHTML=h;
 }
