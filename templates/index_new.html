@@ -194,25 +194,36 @@ td a:hover{text-decoration:underline}
   .stat{padding:14px 16px}
   .stat .s-value{font-size:26px}
   .filter-row{flex-direction:column;align-items:stretch;gap:8px}
-  .filter-row input,.filter-row select{width:100%;min-width:0!important}
+  .filter-row input,.filter-row select{width:100%!important;min-width:0!important;flex:none!important}
   .filter-bar{flex-direction:column;align-items:stretch}
-  .filter-bar input,.filter-bar select{width:100%;min-width:0}
+  .filter-bar input,.filter-bar select{width:100%!important;min-width:0!important}
   .src-tags{gap:6px}
-  .src-tag{min-height:36px;display:flex;align-items:center;padding:6px 12px}
+  .src-tag{min-height:36px;display:inline-flex;align-items:center;padding:6px 12px}
+  /* articles: 2nd filter-row - time+keyword stack, sort inline */
+  .filter-row:nth-child(2){display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .filter-row:nth-child(2) span:first-child{grid-column:1/-1}
+  .filter-row:nth-child(2) input[type="text"]{grid-column:1/-1}
   .btn{min-height:44px;padding:10px 16px}
   .btn-sm{min-height:36px}
   .btn-lg{min-height:48px;padding:12px 20px;font-size:15px}
   .card{padding:16px}
   .card-head{flex-wrap:wrap;gap:8px}
-  .card-head h3{font-size:15px}
+  .card-head h3{font-size:14px}
+  /* article table: hide scraped_at and source on narrow */
+  #articleTable th:nth-child(3),#articleTable td:nth-child(3),
+  #articleTable th:nth-child(5),#articleTable td:nth-child(5){display:none}
+  #latestTable th:nth-child(4),#latestTable td:nth-child(4){display:none}
   table{font-size:13px}
   th,td{padding:10px 8px}
-  .pipeline-steps{padding:10px 12px;gap:0;overflow-x:auto}
-  .p-label{font-size:12px}
-  .p-arrow{margin:0 6px}
+  /* pipeline steps compact */
+  .pipeline-steps{padding:10px 12px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pipeline-steps::-webkit-scrollbar{display:none}
+  .p-label{font-size:11px}
+  .p-arrow{margin:0 4px}
   .p-arrow svg{width:14px;height:14px}
-  .report-preview{padding:1cm 1cm;font-size:12pt;line-height:20pt}
-  .report-preview h2{font-size:15pt}
+  .p-step{flex-shrink:0}
+  .report-preview{padding:.8cm .8cm;font-size:11pt;line-height:18pt}
+  .report-preview h2{font-size:14pt}
   .prov{padding:12px}
   .collapsible .coll-header{padding:10px 12px}
   .collapsible .coll-body-inner{padding:10px 12px}
@@ -231,11 +242,20 @@ td a:hover{text-decoration:underline}
 @media(max-width:480px){
   .stats{grid-template-columns:1fr}
   .stat .s-value{font-size:24px}
-  .topbar-left h1{font-size:16px}
-  .pipeline-steps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .p-step{flex-shrink:0}
-  .pipeline-steps::-webkit-scrollbar{display:none}
-  .src-tag{font-size:12px;padding:5px 10px}
+  .topbar-left h1{font-size:15px}
+  .topbar-right .btn{font-size:13px}
+  .src-tag{font-size:11px;padding:4px 8px;min-height:32px}
+  /* articles table: also hide date column on very small screens */
+  #articleTable th:nth-child(4),#articleTable td:nth-child(4){display:none}
+  #latestTable th:nth-child(3),#latestTable td:nth-child(3){display:none}
+  /* pipeline: hide labels, show numbers only */
+  .p-label{display:none}
+  .p-num{width:26px;height:26px;font-size:12px}
+  .p-arrow{margin:0 8px}
+  .filter-row:nth-child(2){grid-template-columns:1fr}
+  .card-head h3{font-size:13px}
+  .report-preview{padding:.5cm .5cm;font-size:10pt;line-height:16pt}
+  .report-preview h2{font-size:13pt}
 }
 
 /* ===== REDUCED MOTION ===== */
