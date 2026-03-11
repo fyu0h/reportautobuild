@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{touch-action:manipulation;overscroll-behavior:contain}
 :root{
   --bg:#F7F8FA;--bg2:#FFFFFF;--bg3:#F0F1F3;
   --card:#FFFFFF;--card-hover:#FAFBFC;
@@ -118,7 +120,7 @@ td a:hover{text-decoration:underline}
 .check input[type="checkbox"]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
 
 /* ===== TOAST ===== */
-.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;z-index:1000;animation:toastIn .3s ease;box-shadow:var(--shadow-md)}
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;z-index:1100;animation:toastIn .3s ease;box-shadow:var(--shadow-md)}
 .toast.success{background:var(--accent)}
 .toast.error{background:var(--danger)}
 .toast.info{background:var(--primary)}
@@ -162,9 +164,84 @@ td a:hover{text-decoration:underline}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .two-col .card{display:flex;flex-direction:column;margin-bottom:0}
 .two-col .card .table-wrap{flex:1}
-@media(max-width:1100px){.two-col{grid-template-columns:1fr}}
-@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+
+/* ===== MOBILE NAVIGATION ===== */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bg2);border-top:1px solid var(--border);z-index:110;padding:0;padding-bottom:env(safe-area-inset-bottom,0)}
+.bottom-nav-inner{display:flex;height:60px}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;color:var(--text3);font-size:10px;font-weight:600;transition:var(--transition);min-height:44px;font-family:inherit;padding:4px 0}
+.bottom-nav-item:active{transform:scale(.95)}
+.bottom-nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.bottom-nav-item.active{color:var(--primary)}
+.bottom-nav-item.active svg{stroke:var(--primary)}
+
+/* ===== RESPONSIVE: >=1800px ===== */
 @media(min-width:1800px){.content{padding:32px}}
+
+/* ===== RESPONSIVE: <=1100px ===== */
+@media(max-width:1100px){.two-col{grid-template-columns:1fr}}
+
+/* ===== RESPONSIVE: <=768px (TABLET & MOBILE) ===== */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .bottom-nav{display:block}
+  .content{padding:16px;padding-top:16px;padding-bottom:76px}
+  .topbar{position:relative;top:0;height:auto;min-height:52px;padding:12px 16px;flex-wrap:wrap;gap:8px}
+  .topbar-left h1{font-size:17px}
+  .topbar-right{width:100%}
+  .topbar-right .btn{flex:1;justify-content:center;min-height:44px}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{padding:14px 16px}
+  .stat .s-value{font-size:26px}
+  .filter-row{flex-direction:column;align-items:stretch;gap:8px}
+  .filter-row input,.filter-row select{width:100%;min-width:0!important}
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .filter-bar input,.filter-bar select{width:100%;min-width:0}
+  .src-tags{gap:6px}
+  .src-tag{min-height:36px;display:flex;align-items:center;padding:6px 12px}
+  .btn{min-height:44px;padding:10px 16px}
+  .btn-sm{min-height:36px}
+  .btn-lg{min-height:48px;padding:12px 20px;font-size:15px}
+  .card{padding:16px}
+  .card-head{flex-wrap:wrap;gap:8px}
+  .card-head h3{font-size:15px}
+  table{font-size:13px}
+  th,td{padding:10px 8px}
+  .pipeline-steps{padding:10px 12px;gap:0;overflow-x:auto}
+  .p-label{font-size:12px}
+  .p-arrow{margin:0 6px}
+  .p-arrow svg{width:14px;height:14px}
+  .report-preview{padding:1cm 1cm;font-size:12pt;line-height:20pt}
+  .report-preview h2{font-size:15pt}
+  .prov{padding:12px}
+  .collapsible .coll-header{padding:10px 12px}
+  .collapsible .coll-body-inner{padding:10px 12px}
+  .log-terminal{height:calc(100vh - 260px);font-size:11.5px;padding:12px}
+  .toast{bottom:80px;left:16px;right:16px;text-align:center}
+  .view-header{padding:0 16px}
+  .view-header h1{font-size:20px}
+  .view-header p{font-size:13px}
+  /* history detail */
+  #historyDetail .two-col{grid-template-columns:1fr}
+  #historyArticles{max-height:300px!important}
+  #historyReport{max-height:400px!important}
+}
+
+/* ===== RESPONSIVE: <=480px (SMALL PHONES) ===== */
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
+  .stat .s-value{font-size:24px}
+  .topbar-left h1{font-size:16px}
+  .pipeline-steps{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .p-step{flex-shrink:0}
+  .pipeline-steps::-webkit-scrollbar{display:none}
+  .src-tag{font-size:12px;padding:5px 10px}
+}
+
+/* ===== REDUCED MOTION ===== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 
 /* ===== SOURCE TAGS ===== */
 .src-tags{display:flex;gap:6px;flex-wrap:wrap}
@@ -225,6 +302,7 @@ td a:hover{text-decoration:underline}
 <body>
 
 <div class="app">
+
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar">
   <div class="sb-logo">
@@ -572,6 +650,32 @@ td a:hover{text-decoration:underline}
 </main>
 </div>
 
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner">
+    <button class="bottom-nav-item active" data-view="dashboard" onclick="goMobile('dashboard')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>仪表盘</span>
+    </button>
+    <button class="bottom-nav-item" data-view="articles" onclick="goMobile('articles')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>文章</span>
+    </button>
+    <button class="bottom-nav-item" data-view="pipeline" onclick="goMobile('pipeline')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>处理</span>
+    </button>
+    <button class="bottom-nav-item" data-view="history" onclick="goMobile('history')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>历史</span>
+    </button>
+    <button class="bottom-nav-item" data-view="settings" onclick="goMobile('settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>设置</span>
+    </button>
+  </div>
+</nav>
+
 <script>
 let allArticles=[],filterTitles=[],filterSelected=[],selectedArticles=[],currentReport=null;
 
@@ -618,7 +722,11 @@ function go(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('active'));
   document.getElementById('v-'+name).classList.add('active');
-  event.target.closest('.sb-item').classList.add('active');
+  if(event&&event.target){
+    const sbItem=event.target.closest('.sb-item');
+    if(sbItem)sbItem.classList.add('active');
+  }
+  syncBottomNav(name);
   if(name==='dashboard')loadDashboard();
   if(name==='articles')loadArticles();
   if(name==='settings')loadSettings();
@@ -633,8 +741,32 @@ function goDirect(name){
     const x=t.textContent.trim();
     if((name==='pipeline'&&x.includes('智能'))||(name==='dashboard'&&x.includes('仪表'))||(name==='articles'&&x.includes('文章'))||(name==='settings'&&x.includes('设置'))||(name==='logs'&&x.includes('日志'))||(name==='history'&&x.includes('历史')))t.classList.add('active');
   });
+  syncBottomNav(name);
   if(name==='history')loadHistory();
   if(name==='logs'){startLogPolling()}else{stopLogPolling()}
+}
+function goMobile(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+name).classList.add('active');
+  // sync sidebar active state
+  document.querySelectorAll('.sb-item').forEach(t=>{
+    t.classList.remove('active');
+    const x=t.textContent.trim();
+    if((name==='pipeline'&&x.includes('智能'))||(name==='dashboard'&&x.includes('仪表'))||(name==='articles'&&x.includes('文章'))||(name==='settings'&&x.includes('设置'))||(name==='logs'&&x.includes('日志'))||(name==='history'&&x.includes('历史')))t.classList.add('active');
+  });
+  syncBottomNav(name);
+  if(name==='dashboard')loadDashboard();
+  if(name==='articles')loadArticles();
+  if(name==='settings')loadSettings();
+  if(name==='history')loadHistory();
+  if(name==='logs'){startLogPolling()}else{stopLogPolling()}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function syncBottomNav(name){
+  document.querySelectorAll('.bottom-nav-item').forEach(b=>{
+    b.classList.remove('active');
+    if(b.dataset.view===name)b.classList.add('active');
+  });
 }
 
 function toast(m,t='info'){const e=document.createElement('div');e.className='toast '+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3000)}
