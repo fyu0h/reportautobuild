@@ -1048,7 +1048,7 @@ async function downloadHistoryReport(){
     if(!r.ok)throw new Error('导出失败');
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='report.docx';a.click();URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=url;a.download=`国际移民一周资讯_${_historyCurrentReport.dateStart||''}至${_historyCurrentReport.dateEnd||''}.docx`;a.click();URL.revokeObjectURL(url);
   }catch(e){toast('导出失败:'+e.message,'error')}
 }
 
