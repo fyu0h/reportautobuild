@@ -10,8 +10,9 @@ Flask 主程序，提供 REST API 和定时爬取任务。
 import os
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file, render_template, Response
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from models import (
@@ -242,16 +243,27 @@ def api_llm_report():
     if not articles:
         return jsonify({"error": "文章列表为空"}), 400
 
-    # 对没有正文的文章，先爬取正文
-    for a in articles:
-        if not a.get("content"):
-            url = a.get("url", "")
-            source = a.get("source", "")
-            if url:
-                content = scrape_article_content(url, source)
-                if content:
-                    a["content"] = content
-                    update_article_content(url, content)
+    # 对没有正文的文章，先并发爬取正文（并发数 3）
+    need_content = [(i, a) for i, a in enumerate(articles) if not a.get("content") and a.get("url")]
+
+    def _fetch_content(item):
+        idx, a = item
+        url = a.get("url", "")
+        source = a.get("source", "")
+        content = scrape_article_content(url, source)
+        return idx, url, content
+
+    if need_content:
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [executor.submit(_fetch_content, item) for item in need_content]
+            for future in as_completed(futures):
+                try:
+                    idx, url, content = future.result()
+                    if content:
+                        articles[idx]["content"] = content
+                        update_article_content(url, content)
+                except Exception as e:
+                    print(f"[爬取正文] 并发任务异常: {e}")
 
     try:
         report = generate_report(articles, prompt)
@@ -264,6 +276,138 @@ def api_llm_report():
         return jsonify({"report": report})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/llm/report/stream", methods=["POST"])
+def api_llm_report_stream():
+    """SSE 流式报告生成（含进度推送）"""
+    data = request.json
+    articles = data.get("articles", [])
+    prompt = data.get("prompt", None)
+
+    if not articles:
+        return jsonify({"error": "文章列表为空"}), 400
+
+    def generate_events():
+        import queue
+        progress_q = queue.Queue()
+
+        # -- Phase 1: 爬取正文 --
+        need_content = [(i, a) for i, a in enumerate(articles)
+                        if not a.get("content") and a.get("url")]
+        total_crawl = len(need_content)
+
+        if total_crawl > 0:
+            crawl_done = [0]  # mutable counter
+
+            def _fetch_one(item):
+                idx, a = item
+                url = a.get("url", "")
+                source = a.get("source", "")
+                title = a.get("title_cn") or a.get("title", "未知标题")
+                content = scrape_article_content(url, source)
+                return idx, url, title, content
+
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = {executor.submit(_fetch_one, item): item for item in need_content}
+                for future in as_completed(futures):
+                    try:
+                        idx, url, title, content = future.result()
+                        crawl_done[0] += 1
+                        preview = ""
+                        if content:
+                            articles[idx]["content"] = content
+                            update_article_content(url, content)
+                            preview = content[:150].replace("\n", " ") + ("…" if len(content) > 150 else "")
+                        evt = json.dumps({
+                            "phase": "crawl",
+                            "current": crawl_done[0],
+                            "total": total_crawl,
+                            "title": title,
+                            "content_preview": preview,
+                            "success": bool(content)
+                        }, ensure_ascii=False)
+                        yield f"data: {evt}\n\n"
+                    except Exception as e:
+                        crawl_done[0] += 1
+                        evt = json.dumps({
+                            "phase": "crawl",
+                            "current": crawl_done[0],
+                            "total": total_crawl,
+                            "title": "未知",
+                            "content_preview": f"错误: {e}",
+                            "success": False
+                        }, ensure_ascii=False)
+                        yield f"data: {evt}\n\n"
+        else:
+            evt = json.dumps({"phase": "crawl", "current": 0, "total": 0,
+                              "title": "", "content_preview": "所有文章已有正文",
+                              "success": True}, ensure_ascii=False)
+            yield f"data: {evt}\n\n"
+
+        # -- Phase 2: LLM 生成 --
+        evt = json.dumps({"phase": "llm", "current": 0, "total": 1,
+                          "message": "正在发送到 LLM 生成报告…"}, ensure_ascii=False)
+        yield f"data: {evt}\n\n"
+
+        try:
+            def _llm_progress(current_batch, total_batches):
+                progress_q.put((current_batch, total_batches))
+
+            # 在子线程中运行 LLM 以便能 yield 进度
+            result_holder = [None]
+            error_holder = [None]
+
+            def _run_llm():
+                try:
+                    result_holder[0] = generate_report(articles, prompt,
+                                                       progress_callback=_llm_progress)
+                except Exception as e:
+                    error_holder[0] = e
+
+            llm_thread = threading.Thread(target=_run_llm)
+            llm_thread.start()
+
+            # 等待 LLM 完成，同时发送批次进度
+            while llm_thread.is_alive():
+                llm_thread.join(timeout=0.5)
+                while not progress_q.empty():
+                    cur, tot = progress_q.get_nowait()
+                    evt = json.dumps({"phase": "llm", "current": cur, "total": tot,
+                                      "message": f"正在生成第 {cur}/{tot} 批报告…"},
+                                     ensure_ascii=False)
+                    yield f"data: {evt}\n\n"
+
+            # drain remaining progress
+            while not progress_q.empty():
+                cur, tot = progress_q.get_nowait()
+                evt = json.dumps({"phase": "llm", "current": cur, "total": tot,
+                                  "message": f"正在生成第 {cur}/{tot} 批报告…"},
+                                 ensure_ascii=False)
+                yield f"data: {evt}\n\n"
+
+            if error_holder[0]:
+                raise error_holder[0]
+
+            report = result_holder[0]
+
+            # 自动保存到历史记录
+            try:
+                filter_titles = [a.get("title_cn") or a.get("title", "") for a in articles]
+                save_report_history(filter_titles, report, articles)
+            except Exception as he:
+                print(f"[历史记录] 保存失败: {he}")
+
+            # -- Phase 3: 完成 --
+            evt = json.dumps({"phase": "done", "report": report}, ensure_ascii=False)
+            yield f"data: {evt}\n\n"
+
+        except Exception as e:
+            evt = json.dumps({"phase": "error", "message": str(e)}, ensure_ascii=False)
+            yield f"data: {evt}\n\n"
+
+    return Response(generate_events(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.route("/api/report/generate", methods=["POST"])

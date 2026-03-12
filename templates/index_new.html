@@ -318,6 +318,35 @@ td a:hover{text-decoration:underline}
 .log-detail.open{display:block}
 .log-cat-btn{border-radius:16px!important;font-size:12px!important}
 .log-cat-btn.active{background:var(--primary)!important;color:#fff!important;border-color:var(--primary)!important}
+
+/* ===== PROGRESS MODAL ===== */
+.progress-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.progress-overlay.active{opacity:1;pointer-events:auto}
+.progress-modal{background:var(--card);border-radius:16px;width:90%;max-width:580px;box-shadow:0 20px 60px rgba(0,0,0,.25);transform:translateY(20px) scale(.97);transition:transform .3s ease;overflow:hidden;max-height:85vh;display:flex;flex-direction:column}
+.progress-overlay.active .progress-modal{transform:translateY(0) scale(1)}
+.pm-header{padding:22px 24px 12px;display:flex;align-items:center;gap:12px}
+.pm-header-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7C3AED);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pm-header-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2}
+.pm-header-text h3{font-size:17px;font-weight:700;color:var(--text)}
+.pm-header-text p{font-size:13px;color:var(--text3);margin-top:2px}
+.pm-body{padding:0 24px 20px;flex:1;overflow:hidden;display:flex;flex-direction:column}
+.pm-progress-wrap{margin-bottom:14px}
+.pm-progress-bar{width:100%;height:8px;background:var(--bg3);border-radius:8px;overflow:hidden;position:relative}
+.pm-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#7C3AED);border-radius:8px;transition:width .4s ease;width:0%;position:relative}
+.pm-progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:pm-shimmer 1.5s infinite}
+@keyframes pm-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.pm-progress-info{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--text3)}
+.pm-status{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;color:var(--text);min-height:42px}
+.pm-status .spin{border-color:rgba(21,94,239,.2);border-top-color:var(--primary);width:16px;height:16px;flex-shrink:0}
+.pm-status-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-log{flex:1;min-height:120px;max-height:240px;overflow-y:auto;background:#1a1b26;border-radius:10px;padding:12px 14px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11.5px;line-height:1.7;color:#a9b1d6}
+.pm-log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pm-log-entry .pm-ok{color:#73daca}
+.pm-log-entry .pm-err{color:#f7768e}
+.pm-log-entry .pm-info{color:#7aa2f7}
+.pm-log-entry .pm-preview{color:#9aa5ce;font-size:10.5px;display:block;margin-top:2px;opacity:.75}
+.pm-footer{padding:12px 24px 18px;display:flex;justify-content:flex-end}
+@media(max-width:768px){.progress-modal{width:95%;max-width:none;max-height:90vh;border-radius:14px}.pm-header{padding:16px 16px 10px}.pm-body{padding:0 16px 16px}.pm-footer{padding:10px 16px 14px}.pm-log{max-height:180px;min-height:80px}}
 </style>
 </head>
 <body>
@@ -668,6 +697,35 @@ td a:hover{text-decoration:underline}
   <div id="logArea" class="log-terminal"></div>
 </div>
 
+<!-- ===== PROGRESS MODAL ===== -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-modal">
+    <div class="pm-header">
+      <div class="pm-header-icon">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="pm-header-text">
+        <h3 id="pmTitle">报告生成中</h3>
+        <p id="pmSubtitle">正在准备数据…</p>
+      </div>
+    </div>
+    <div class="pm-body">
+      <div class="pm-progress-wrap">
+        <div class="pm-progress-bar"><div class="pm-progress-fill" id="pmFill"></div></div>
+        <div class="pm-progress-info"><span id="pmPercent">0%</span><span id="pmStep">准备中</span></div>
+      </div>
+      <div class="pm-status" id="pmStatus">
+        <div class="spin"></div>
+        <span class="pm-status-text">正在初始化…</span>
+      </div>
+      <div class="pm-log" id="pmLog"></div>
+    </div>
+    <div class="pm-footer">
+      <button class="btn btn-outline btn-sm" id="pmCancel" onclick="cancelProgress()">取消</button>
+    </div>
+  </div>
+</div>
+
 </main>
 </div>
 
@@ -999,33 +1057,109 @@ async function runFilter(){
 }
 
 // Report
+// ===== Progress Modal helpers =====
+let _progressAbort=null;
+function showProgress(){document.getElementById('progressOverlay').classList.add('active');document.getElementById('pmLog').innerHTML='';document.getElementById('pmFill').style.width='0%';document.getElementById('pmPercent').textContent='0%';document.getElementById('pmStep').textContent='准备中';document.getElementById('pmStatus').innerHTML='<div class="spin"></div><span class="pm-status-text">正在初始化…</span>';document.getElementById('pmTitle').textContent='报告生成中';document.getElementById('pmSubtitle').textContent='正在准备数据…';document.getElementById('pmCancel').disabled=false}
+function hideProgress(){document.getElementById('progressOverlay').classList.remove('active')}
+function cancelProgress(){if(_progressAbort){_progressAbort.abort();_progressAbort=null}hideProgress();toast('已取消','info')}
+function pmSetProgress(pct,step){document.getElementById('pmFill').style.width=pct+'%';document.getElementById('pmPercent').textContent=Math.round(pct)+'%';document.getElementById('pmStep').textContent=step}
+function pmSetStatus(html){document.getElementById('pmStatus').innerHTML=html}
+function pmAddLog(html){const el=document.getElementById('pmLog');el.innerHTML+=`<div class="pm-log-entry">${html}</div>`;el.scrollTop=el.scrollHeight}
+
 async function runReport(){
   const cks=document.querySelectorAll('#filterResults input[type="checkbox"]:checked'),selT=Array.from(cks).map(c=>c.dataset.title);
   if(!selT.length){toast('请勾选至少一条','error');return}
   const matched=selectedArticles.filter(a=>selT.some(t=>a.title===t||a.title.includes(t)||t.includes(a.title)));
   if(!matched.length){toast('无法匹配','error');return}
   const b=document.getElementById('btnReport');b.disabled=true;
-  // 显示分批信息
-  const batchSize=window._reportBatchSize||15;
-  const batches=Math.ceil(matched.length/batchSize);
-  if(batches>1){
-    b.innerHTML=`<span class="spin"></span> 生成中（${matched.length}篇，分${batches}批）…`;
-    toast(`文章较多（${matched.length}篇），将分${batches}批生成并自动合并`,'info');
-  }else{
-    b.innerHTML='<span class="spin"></span> 生成中…';
-  }
-  try{const r=await api('/api/llm/report','POST',{articles:matched,prompt:document.getElementById('reportPrompt').value||null}),d=await r.json();
-    if(d.error)throw new Error(d.error);currentReport=d.report;
-    if(currentReport.raw_response){document.getElementById('reportPreviewArea').innerHTML=`<div class="card" style="background:var(--bg)"><pre style="white-space:pre-wrap;font-size:12px;color:var(--text2)">${currentReport.raw_response}</pre></div>`}else{renderReport(currentReport)}
-    document.getElementById('btnDownload').disabled=false;
-    document.getElementById('ps2').className='p-num done';document.getElementById('ps3').className='p-num active';
-    const totalItems=currentReport.summaries?.length||0;
-    const totalNews=(currentReport.sections||[]).reduce((s,sec)=>s+(sec.newsItems?.length||0),0);
-    if(totalItems!==totalNews){
-      toast(`⚠️ 注意：摘要 ${totalItems} 条，详情 ${totalNews} 条，数量不一致，请核对！`,'error');
+  b.innerHTML='<span class="spin"></span> 生成中…';
+
+  // 显示进度弹窗
+  showProgress();
+  _progressAbort=new AbortController();
+
+  try{
+    const resp=await fetch('/api/llm/report/stream',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({articles:matched,prompt:document.getElementById('reportPrompt').value||null}),
+      signal:_progressAbort.signal
+    });
+    if(!resp.ok){const err=await resp.json();throw new Error(err.error||'请求失败')}
+
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let buffer='';
+    let crawlTotal=0, llmTotal=1;
+
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+      const lines=buffer.split('\n');
+      buffer=lines.pop()||'';
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        let evt;
+        try{evt=JSON.parse(line.slice(6))}catch{continue}
+
+        if(evt.phase==='crawl'){
+          crawlTotal=evt.total||1;
+          const crawlPct=crawlTotal>0?Math.round((evt.current/crawlTotal)*50):50;
+          if(crawlTotal===0){
+            pmSetProgress(50,'正文已就绪');
+            pmSetStatus('<span class="pm-status-text" style="color:var(--accent)">✓ 所有文章已有正文，跳过爬取</span>');
+            pmAddLog('<span class="pm-ok">✓</span> 所有文章已有正文内容');
+          }else{
+            pmSetProgress(crawlPct,`爬取正文 ${evt.current}/${crawlTotal}`);
+            document.getElementById('pmSubtitle').textContent=`正在获取文章正文 (${evt.current}/${crawlTotal})`;
+            const icon=evt.success?'<span class="pm-ok">✓</span>':'<span class="pm-err">✗</span>';
+            const titleShort=evt.title.length>40?evt.title.slice(0,40)+'…':evt.title;
+            pmSetStatus(`<div class="spin"></div><span class="pm-status-text">正在获取【${titleShort}】的正文内容…</span>`);
+            let logLine=`${icon} ${evt.title}`;
+            if(evt.content_preview){logLine+=`<span class="pm-preview">${evt.content_preview}</span>`}
+            pmAddLog(logLine);
+          }
+        }else if(evt.phase==='llm'){
+          llmTotal=evt.total||1;
+          const base=50;
+          const llmPct=base+Math.round((evt.current/llmTotal)*45);
+          pmSetProgress(Math.min(llmPct,95),evt.message);
+          document.getElementById('pmSubtitle').textContent='正在调用大语言模型…';
+          pmSetStatus(`<div class="spin"></div><span class="pm-status-text">${evt.message}</span>`);
+          pmAddLog(`<span class="pm-info">⤷</span> ${evt.message}`);
+        }else if(evt.phase==='done'){
+          pmSetProgress(100,'完成');
+          pmSetStatus('<span class="pm-status-text" style="color:var(--accent)">✓ 报告生成完成！</span>');
+          pmAddLog('<span class="pm-ok">✓</span> <b>报告生成完成</b>');
+          document.getElementById('pmTitle').textContent='生成完成';
+          document.getElementById('pmSubtitle').textContent='报告已成功生成';
+          document.getElementById('pmCancel').disabled=true;
+
+          currentReport=evt.report;
+          if(currentReport.raw_response){document.getElementById('reportPreviewArea').innerHTML=`<div class="card" style="background:var(--bg)"><pre style="white-space:pre-wrap;font-size:12px;color:var(--text2)">${currentReport.raw_response}</pre></div>`}else{renderReport(currentReport)}
+          document.getElementById('btnDownload').disabled=false;
+          document.getElementById('ps2').className='p-num done';document.getElementById('ps3').className='p-num active';
+          const totalItems=currentReport.summaries?.length||0;
+          const totalNews=(currentReport.sections||[]).reduce((s,sec)=>s+(sec.newsItems?.length||0),0);
+          if(totalItems!==totalNews){toast(`⚠️ 注意：摘要 ${totalItems} 条，详情 ${totalNews} 条，数量不一致，请核对！`,'error')}
+          toast(`报告生成完成！共 ${totalItems} 条摘要`,'success');
+          setTimeout(hideProgress,1500);
+        }else if(evt.phase==='error'){
+          throw new Error(evt.message);
+        }
+      }
     }
-    toast(`报告生成完成！共 ${totalItems} 条摘要${batches>1?' (已合并'+batches+'批)':''}`,'success');
-  }catch(e){toast('生成失败:'+e.message,'error')}
+  }catch(e){
+    if(e.name==='AbortError')return;
+    pmSetStatus(`<span class="pm-status-text" style="color:var(--danger)">✗ ${e.message}</span>`);
+    pmAddLog(`<span class="pm-err">✗ 错误: ${e.message}</span>`);
+    document.getElementById('pmTitle').textContent='生成失败';
+    document.getElementById('pmCancel').textContent='关闭';
+    document.getElementById('pmCancel').disabled=false;
+    toast('生成失败:'+e.message,'error');
+  }
+  _progressAbort=null;
   b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 生成报告';
 }
 function renderReport(r){
